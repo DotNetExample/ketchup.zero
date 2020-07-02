@@ -9,7 +9,6 @@ using Ketchup.Core.Kong.Attribute;
 using Ketchup.Permission;
 using Ketchup.Profession.AutoMapper;
 using Ketchup.Profession.ORM.EntityFramworkCore.Repository;
-using Ketchup.Profession.Specification;
 using Ketchup.Zero.Application.Domain;
 using Ketchup.Zero.Application.Domain.Repos;
 using Ketchup.Zero.Application.Services.Menu.DTO;
@@ -18,7 +17,7 @@ using Newtonsoft.Json;
 
 namespace Ketchup.Zero.Application.Services.Menu
 {
-    [Service(Name = "Ketchup.Permission.RpcMenu")]
+    [Service(Name = nameof(RpcMenu), Package = "Ketchup.Permission", TypeClientName = nameof(RpcMenu.RpcMenuClient))]
     public class MenuService : RpcMenu.RpcMenuBase
     {
         private readonly IEfCoreRepository<SysMenu, int> _menu;
@@ -40,7 +39,9 @@ namespace Ketchup.Zero.Application.Services.Menu
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "menus.PageSerachMenu", Paths = new[] { "/zero/menus/PageSerachMenu" }, Tags = new[] { "menu" })]
+        [KongRoute(Name = "menus.PageSerachMenu", Paths = new[] {"/zero/menus/PageSerachMenu"},
+            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"menu"})]
+        [ServiceRoute(Name = "menus", MethodName = nameof(PageSerachMenu))]
         public override Task<MenutList> PageSerachMenu(SearchMenu request, ServerCallContext context)
         {
             var query = _menu.GetAll().AsNoTracking();
@@ -58,7 +59,7 @@ namespace Ketchup.Zero.Application.Services.Menu
                 .Take(request.PageMax)
                 .ToList();
 
-            var date = new MenutList { Total = total };
+            var date = new MenutList {Total = total};
 
             ConvertToEntities(result).ForEach(item =>
             {
@@ -66,7 +67,7 @@ namespace Ketchup.Zero.Application.Services.Menu
                 {
                     var operate = _operate.SingleOrDefault(ope => ope.Id == operateId);
                     if (operate == null) return;
-                    item.OperateModels.Add(new OperateModel() { Id = operateId, Name = operate.Name });
+                    item.OperateModels.Add(new OperateModel {Id = operateId, Name = operate.Name});
                 });
 
                 date.Datas.Add(item);
@@ -81,8 +82,9 @@ namespace Ketchup.Zero.Application.Services.Menu
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "menus.CreateOrEditMenu", Paths = new[] { "/zero/menus/CreateOrEditMenu" },
-            Tags = new[] { "menu" })]
+        [KongRoute(Name = "menus.CreateOrEditMenu", Paths = new[] {"/zero/menus/CreateOrEditMenu"},
+            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"menu"})]
+        [ServiceRoute(Name = "menus", MethodName = nameof(CreateOrEditMenu))]
         public override Task<MenuDto> CreateOrEditMenu(CreateOrEditMenuRequest request, ServerCallContext context)
         {
             var menu = request.MapTo<SysMenu>();
@@ -115,18 +117,20 @@ namespace Ketchup.Zero.Application.Services.Menu
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "menus.GetMenusByRole", Paths = new[] { "/zero/menus/GetMenusByRole" }, Methods = new[] { "POST", "OPTIONS" }, Tags = new[] { "menu" })]
+        [KongRoute(Name = "menus.GetMenusByRole", Paths = new[] {"/zero/menus/GetMenusByRole"},
+            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"menu"})]
+        [ServiceRoute(Name = "menus", MethodName = nameof(GetMenusByRole))]
         public override Task<MenusRoleReponse> GetMenusByRole(MenusRoleRequest request, ServerCallContext context)
         {
             var result = new MenusRoleReponse();
             var tree = GetRoleOfMenus(request.RoleId);
 
-            result.Datas.Add(new MenusByRole { Id = 0, Icon = "home", Title = "首页", Path = "/index" });
+            result.Datas.Add(new MenusByRole {Id = 0, Icon = "home", Title = "首页", Path = "/index"});
 
 
             tree.ForEach(item =>
             {
-                var model = new MenusByRole { Id = item.Id, Title = item.Title, Icon = item.Icon ?? "", Path = "" };
+                var model = new MenusByRole {Id = item.Id, Title = item.Title, Icon = item.Icon ?? "", Path = ""};
 
                 if (item.Children.Count > 0)
                     item.Children.ForEach(child =>
@@ -152,8 +156,9 @@ namespace Ketchup.Zero.Application.Services.Menu
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "menus.GetMenusSetRole", Paths = new[] { "/zero/menus/GetMenusSetRole" },
-            Tags = new[] { "menu" })]
+        [KongRoute(Name = "menus.GetMenusSetRole", Paths = new[] {"/zero/menus/GetMenusSetRole"},
+            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"menu"})]
+        [ServiceRoute(Name = "menus", MethodName = nameof(GetMenusSetRole))]
         public override Task<RoleMenuReponse> GetMenusSetRole(MenusRoleRequest request, ServerCallContext context)
         {
             var result = new RoleMenuReponse();
@@ -189,17 +194,17 @@ namespace Ketchup.Zero.Application.Services.Menu
             tree.ForEach(item => { BuildMeunsRecursiveTree(listMenus, item); });
             tree.ForEach(item =>
             {
-                var model = new MenuModel { Id = $"{item.Id}_0", Lable = item.Title };
+                var model = new MenuModel {Id = $"{item.Id}_0", Lable = item.Title};
 
                 if (item.Children.Count > 0)
                     item.Children.ForEach(child =>
                     {
-                        var operateModel = new MenuModel { Id = $"{child.Id}_0", Lable = child.Title };
+                        var operateModel = new MenuModel {Id = $"{child.Id}_0", Lable = child.Title};
                         model.Children.Add(operateModel);
                         operates.ForEach(op =>
                         {
                             if (JsonConvert.DeserializeObject<List<int>>(child.Operates).Contains(op.Id))
-                                operateModel.Children.Add(new MenuModel { Id = $"{child.Id}_{op.Id}", Lable = op.Name });
+                                operateModel.Children.Add(new MenuModel {Id = $"{child.Id}_{op.Id}", Lable = op.Name});
                         });
                     });
                 result.List.Add(model);
@@ -225,7 +230,9 @@ namespace Ketchup.Zero.Application.Services.Menu
             return Task.FromResult(result);
         }
 
-        [KongRoute(Name = "menus.RemoveMenu", Paths = new[] { "/zero/menus/RemoveMenu" }, Tags = new[] { "menu" })]
+        [KongRoute(Name = "menus.RemoveMenu", Paths = new[] {"/zero/menus/RemoveMenu"},
+            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"menu"})]
+        [ServiceRoute(Name = "menus", MethodName = nameof(RemoveMenu))]
         public override Task<RemoveResponse> RemoveMenu(RemoveRequest request, ServerCallContext context)
         {
             var response = new RemoveResponse();
