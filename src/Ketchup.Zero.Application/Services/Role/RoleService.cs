@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
 using Grpc.Core;
 using Ketchup.Core.Attributes;
 using Ketchup.Core.Kong.Attribute;
@@ -23,13 +24,15 @@ namespace Ketchup.Zero.Application.Services.Role
         private readonly IEfCoreRepository<SysMenu, int> _menu;
         private readonly IEfCoreRepository<SysRole, int> _role;
         private readonly IRoleMenuRepos _roleMenu;
+        private readonly IMapper _mapper;
 
         public RoleService(IEfCoreRepository<SysRole, int> role, IRoleMenuRepos roleMenu,
-            IEfCoreRepository<SysMenu, int> menu)
+            IEfCoreRepository<SysMenu, int> menu, IMapper mapper)
         {
             _role = role;
             _roleMenu = roleMenu;
             _menu = menu;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -38,9 +41,9 @@ namespace Ketchup.Zero.Application.Services.Role
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "roles.PageSerachRole", Paths = new[] {"/zero/roles/PageSerachRole"},
-            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"role"})]
-        [ServiceRoute(Name = "roles", MethodName = nameof(PageSerachRole))]
+        //[KongRoute(Name = "roles.PageSerachRole", Paths = new[] {"/zero/roles/PageSerachRole"},
+        //    Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"role"})]
+        [ServiceRouter(Name = "roles", MethodName = nameof(PageSerachRole))]
         public override Task<RoleList> PageSerachRole(SearchRole request, ServerCallContext context)
         {
             var query = _role.GetAll().AsNoTracking();
@@ -71,12 +74,12 @@ namespace Ketchup.Zero.Application.Services.Role
         /// <param name="request"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [KongRoute(Name = "roles.CreateOrEditRole", Paths = new[] {"/zero/roles/CreateOrEditRole"},
-            Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"role"})]
-        [ServiceRoute(Name = "roles", MethodName = nameof(CreateOrEditRole))]
+        //[KongRoute(Name = "roles.CreateOrEditRole", Paths = new[] {"/zero/roles/CreateOrEditRole"},
+        //    Methods = new[] {"POST", "OPTIONS"}, Tags = new[] {"role"})]
+        [ServiceRouter(Name = "roles", MethodName = nameof(CreateOrEditRole))]
         public override Task<RoleDto> CreateOrEditRole(RoleDto request, ServerCallContext context)
         {
-            var role = request.MapTo<SysRole>();
+            var role = _mapper.Map<SysRole>(request);
 
             if (role.Id > 0)
             {
@@ -91,12 +94,12 @@ namespace Ketchup.Zero.Application.Services.Role
                 role = _role.Insert(role);
             }
 
-            return Task.FromResult(role.MapTo<RoleDto>());
+            return Task.FromResult(_mapper.Map<RoleDto>(role));
         }
 
-        [KongRoute(Name = "roles.RemoveRole", Tags = new[] {"role"}, Methods = new[] {"POST", "OPTIONS"},
-            Paths = new[] {"/zero/roles/RemoveRole"})]
-        [ServiceRoute(Name = "roles", MethodName = nameof(RemoveRole))]
+        //[KongRoute(Name = "roles.RemoveRole", Tags = new[] {"role"}, Methods = new[] {"POST", "OPTIONS"},
+        //    Paths = new[] {"/zero/roles/RemoveRole"})]
+        [ServiceRouter(Name = "roles", MethodName = nameof(RemoveRole))]
         public override Task<RemoveResponse> RemoveRole(RemoveRequest request, ServerCallContext context)
         {
             var response = new RemoveResponse();
@@ -116,9 +119,9 @@ namespace Ketchup.Zero.Application.Services.Role
             }
         }
 
-        [KongRoute(Name = "roles.SetRolePermission", Tags = new[] {"role"},
-            Methods = new[] {"POST", "OPTIONS"}, Paths = new[] {"/zero/roles/SetRolePermission"})]
-        [ServiceRoute(Name = "roles", MethodName = nameof(SetRolePermission))]
+        //[KongRoute(Name = "roles.SetRolePermission", Tags = new[] {"role"},
+        //    Methods = new[] {"POST", "OPTIONS"}, Paths = new[] {"/zero/roles/SetRolePermission"})]
+        [ServiceRouter(Name = "roles", MethodName = nameof(SetRolePermission))]
         public override Task<SetRolePermissionResponse> SetRolePermission(SetRolepermissionRequest request,
             ServerCallContext context)
         {
@@ -201,7 +204,7 @@ namespace Ketchup.Zero.Application.Services.Role
 
         protected List<RoleDto> ConvertToEntities(List<SysRole> entities)
         {
-            return entities.MapTo<List<RoleDto>>();
+            return _mapper.Map<List<RoleDto>>(entities);
         }
 
         #endregion
